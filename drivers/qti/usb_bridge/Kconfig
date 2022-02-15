@@ -1,0 +1,15 @@
+config QTI_USB_F_BRIDGE
+       tristate
+
+config QTI_USB_BRIDGE
+	tristate "Host port device port bridge support"
+	depends on USB
+	depends on USB_LIBCOMPOSITE
+	select QTI_USB_F_BRIDGE
+	help
+	  The driver is for bridging bulk endpoints between USB host port
+	  and USB device port. The interfaces to be bridged should be enabled
+	  using CONFIGFS, this driver will claim those interfaces from the host
+	  port and bridge them as CONFIGFS functions on the device port.
+	  Say Y here if you want the device to act as a USB bridge between
+	  a USB host and a USB device. If unsure, choose N.

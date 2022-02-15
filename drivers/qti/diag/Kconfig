@@ -1,0 +1,45 @@
+menu "Diag Support"
+
+config QTI_DIAG_CHAR
+	tristate "DIAG CHAR Interface Core"
+	default n
+	depends on QTI_USB_F_DIAG
+	select CRC_CCITT
+	help
+	  Char driver interface for SoC Diagnostic information. The DIAG Char
+	  driver provides diag forwarding to user space and SoC Peripherals.
+	  This enables diagchar for maemo usb gadget or android usb gadget
+	  based on config selected.
+
+config QTI_DIAG_OVER_USB
+	bool "Enable DIAG traffic to go over USB"
+	depends on QTI_DIAG_CHAR
+	default y
+	help
+	  Diag over USB enables sending DIAG traffic over a USB transport. When
+	  the USB endpoints become available, the DIAG driver will enable Diag
+	  traffic over USB. This allows for host side tools to parse and display
+	  Diag traffic from the USB endpoint.
+
+config QTI_DIAGFWD_BRIDGE_CODE
+	bool "Enable remote DIAG traffic over MHI/HSIC"
+	depends on QTI_DIAG_CHAR
+	depends on QTI_USB_DIAG_BRIDGE || QTI_MHI_BUS
+	default y
+	help
+	  MHI/HSIC Transport Layer for DIAG Router. When the MHI/HSIC endpoints
+	  become available, this bridge driver enables DIAG traffic over MHI
+	  and HSIC.
+
+config QTI_DIAG_OVER_PCIE
+	bool "Enable Diag traffic to go over PCIE"
+	depends on QTI_DIAG_CHAR
+	depends on QTI_MSM_MHI_DEV
+	help
+	  Diag over PCIE enables sending diag traffic over PCIE endpoint when
+	  pcie is available. Diag PCIE channels should be configured
+	  and connected to use the transport. If PCIE is not configured
+	  diag will switch to usb mode and diag traffic will be routed
+	  over USB.
+
+endmenu

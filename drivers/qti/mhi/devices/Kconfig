@@ -1,0 +1,19 @@
+menu "MHI device support"
+
+config QTI_MHI_NETDEV
+       tristate "MHI NETDEV"
+       depends on QTI_MHI_BUS && QTI_RMNET_DATA
+       help
+	  MHI based net device driver for transferring IP traffic
+	  between host and modem. By enabling this driver, clients
+	  can transfer data using standard network interface.
+
+config QTI_MHI_UCI
+       tristate "MHI UCI"
+       depends on QTI_MHI_BUS
+       help
+	  MHI based uci driver is for transferring data between host and
+	  modem using standard file operations from user space. Open, read,
+	  write, ioctl, and close operations are supported by this driver.
+
+endmenu

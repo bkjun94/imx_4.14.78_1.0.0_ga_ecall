@@ -1,0 +1,73 @@
+static void ais2120_reg_command(u8 *buf, u8 readop, u8 addr, u8 data)
+{
+	u32 cmd = 0;
+	cmd |= (readop ? 3 : 1) << 30;
+	cmd |= (0 << 29); // non-sensor data
+	cmd |= (addr & 0x1f) << 21; // register address for R/W operations
+	if (readop == 0) cmd |= data << 13;
+	cmd |= check_odd_parity(cmd) << 28; // set parity (odd parity, cover bit 31-8)
+	*(u32 *)buf = __swap32__(cmd);
+	cmd |= calculate_crc8(0, buf, 3);
+	printk("[gschoi] cmd: 0x%08x [%02x:%02x:%02x]\n", cmd,buf[0],buf[1],buf[2]);
+	*(u32 *)buf = cmd;
+}
+
+static int ais2120_reg_response(u8 *buf, u8* pdata)
+{
+	u8 tmp[4];
+	u32 res = *(u32 *)buf;
+	u8 sen = (res >> 31) & 1;
+	u8 op = (res >> 29) & 3;
+	u8 parity = (res >> 28) & 1;
+	u8 addr = (res >> 21) & 0x1f;
+	u8 data = (res >> 13) & 0xff;
+	u8 status = (res >> 8) & 15;
+	u8 crc = res & 0xff;
+	*(u32 *)tmp = __swap32__(res);
+	u8 ccrc = calculate_crc8(0, tmp, 3);
+	if (pdata)
+		*pdata = data;
+
+	printk("[gschoi] response[0x%08X] sen=%d,op=%d,par=%d,addr=%d,data=0x%02x,sf=%d,crc(%02X:%02X)\n", res, sen, op, parity, addr, data, status, crc, ccrc);
+
+	return status;
+}
+
+int st_ais2120_spi_read(struct device *dev, u8 addr, int len, u8 *data)
+{
+	struct spi_device *spi = to_spi_device(dev);
+    struct st_ais2120_hw *hw = spi_get_drvdata(spi);
+	int err;
+	u8 txbuf[4], rxbuf[4];
+
+	struct spi_transfer xfers1[] = {
+		{
+			.tx_buf = txbuf,
+			.bits_per_word = 32,
+			.len = 4,
+		}
+	};
+	struct spi_transfer xfers2[] = {
+		{
+			.rx_buf = rxbuf,
+			.bits_per_word = 32,
+			.len = 4,
+		}
+	};
+	// using sync transfer
+	{
+		int ret;
+		/* phase 1 */
+		ais2120_reg_command(txbuf, 1, addr, 0);
+		err = spi_sync_transfer(spi, xfers1,  ARRAY_SIZE(xfers1));
+		if (err < 0)
+			return err;
+		/* phase 2 */
+		err = spi_sync_transfer(spi, xfers2,  ARRAY_SIZE(xfers2));
+		if (err < 0)
+			return err;
+		ret = ais2120_reg_response(rxbuf, data);
+		printk("[gschoi] data=0x%02x\n", *data);
+	}
+	return len;
+}
